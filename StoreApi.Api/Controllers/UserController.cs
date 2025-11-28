@@ -13,8 +13,7 @@ using StoreSystem.Application.Interfaces;
 namespace StoreApi.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
+    [Route("api/Profile")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -22,39 +21,20 @@ namespace StoreApi.Api.Controllers
         {
             _userService = userService;
         }
-        [HttpGet("Profile")]
-            [Authorize]
+            [HttpGet("Profile")]
             [ProducesResponseType(StatusCodes.Status200OK)]
             public async Task<ActionResult<GeneralResponse<ProfileRes>>> Profile()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not authenticated");
-            return Ok(await _userService.Profile(userId));
-        }
+            => Ok(await _userService.Profile());
 
         [HttpPut("Profile")]
-        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<GeneralResponse<string?>>> UpdateProfile([FromBody] UpdateUserProfileReq req)
-        {
-            string? UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(UserId))
-                return Unauthorized("User not authenticated");
-
-            return Ok(await _userService.UpdateProfile(UserId, req));
-        }
-         [HttpPut("ChangePassword")]
-        [Authorize]
+          => Ok(await _userService.UpdateProfile( req));
+        
+        
+        [HttpPut("ChangePassword")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<GeneralResponse<string?>>> ChangePassword([FromBody] ChangePasswordReq req)
-        {
-            string? UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(UserId))
-                return Unauthorized("User not authenticated");
-            return Ok(await _userService.ChangePassword(UserId,req));
-        }
+            => Ok(await _userService.ChangePassword(req));
     }
 }

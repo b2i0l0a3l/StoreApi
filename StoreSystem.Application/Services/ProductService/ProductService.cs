@@ -37,7 +37,6 @@ namespace StoreSystem.Application.Services.ProductService
             _CurrentUserService = currentUserService;
         }
 
-        /// <inheritdoc />
         public async Task<GeneralResponse<int>> CreateAsync(ProductReq req)
         {
             if (!_CurrentUserService.IsAuthenticated)
@@ -66,7 +65,6 @@ namespace StoreSystem.Application.Services.ProductService
             return GeneralResponse<int>.Success(entity.Id, "Product created", 201);
         }
 
-        /// <inheritdoc />
         public async Task<GeneralResponse<bool?>> UpdateAsync(int id, ProductReq req)
         {
             if (!_CurrentUserService.IsAuthenticated)

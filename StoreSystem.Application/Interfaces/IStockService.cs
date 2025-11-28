@@ -5,9 +5,7 @@ using StoreSystem.Application.Contract.Common;
 
 namespace StoreSystem.Application.Interfaces
 {
-    /// <summary>
-    /// Service to manage stock operations.
-    /// </summary>
+    
     public interface IStockService
     {
         Task<GeneralResponse<int>> CreateStockAsync(StockReq req);

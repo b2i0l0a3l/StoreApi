@@ -150,16 +150,7 @@ namespace StoreSystem.Application.Services.CategoryService
             return GeneralResponse<bool?>.Success(null, "success", 201);
 
         }
-        /*
-        private async Task<int?> GetInventoryId()
-        {
-            int? StoreId = _CurrentUserService.StoreId!.Value;
-            if (StoreId == null) return null;
-
-            var r =  await _repo.FindAsync(x => x.Inventory!.StoreId == StoreId);
-            return null; // Placeholder
-        }
-        */
+       
    
         private Tuple<bool, string> IsEntityValid(CategoryReq entity)
         {

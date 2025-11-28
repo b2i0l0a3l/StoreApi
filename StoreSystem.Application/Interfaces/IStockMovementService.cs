@@ -7,9 +7,7 @@ using BookingSystem.Core.common;
 
 namespace StoreSystem.Application.Interfaces
 {
-    /// <summary>
-    /// Service to manage stock movements.
-    /// </summary>
+
     public interface IStockMovementService
     {
         Task<GeneralResponse<int>> AddMovementAsync(StockMovementReq req);

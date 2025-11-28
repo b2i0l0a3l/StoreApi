@@ -30,7 +30,6 @@ namespace StoreApi.Api.Controllers
         
         [HttpGet("GetStoreByJwt")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [RequirePermission(PermissionCodes.StoreRead)]
         public async Task<ActionResult<GeneralResponse<StoreRes?>>> GetStoreByJwt()
         {
@@ -39,8 +38,6 @@ namespace StoreApi.Api.Controllers
 
         [HttpGet("{StoreId}", Name = "GetStoreById")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.StoreRead)]
         public async Task<ActionResult<GeneralResponse<StoreRes>>> GetStoreById(int StoreId)
         => Ok(await _store.GetByIdAsync(StoreId));

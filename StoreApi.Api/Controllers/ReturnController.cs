@@ -10,7 +10,6 @@ namespace StoreApi.Api.Controllers
 {
     [ApiController]
     [Route("api/Return")]
-    [Authorize]
     public class ReturnController : ControllerBase
     {
         private readonly IReturnService _service;

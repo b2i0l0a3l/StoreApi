@@ -6,9 +6,7 @@ using StoreSystem.Application.Contract.PaymentContract.Res;
 
 namespace StoreSystem.Application.Interfaces
 {
-    /// <summary>
-    /// Payment service for recording and querying payments.
-    /// </summary>
+
     public interface IPaymentService
     {
         Task<GeneralResponse<int>> RecordPaymentAsync(PaymentReq req);

@@ -72,5 +72,6 @@ namespace StoreSystem.Infrastructure.External.Util
             // For now, return empty - will be implemented via IPermissionService
             return Enumerable.Empty<string>();
         }
+ 
     }
 }

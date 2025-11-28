@@ -1,15 +1,10 @@
 using StoreSystem.Core.common;
-using System.Threading.Tasks;
-using BookingSystem.Core.common;
 using StoreSystem.Application.Contract.Common;
 using StoreSystem.Application.Contract.SupplierContract.Req;
 using StoreSystem.Application.Contract.SupplierContract.Res;
 
 namespace StoreSystem.Application.Interfaces
 {
-    /// <summary>
-    /// Service interface for supplier operations.
-    /// </summary>
     public interface ISupplierService
     {
         Task<GeneralResponse<int>> CreateSupplierAsync(SupplierReq req);

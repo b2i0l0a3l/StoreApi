@@ -6,9 +6,7 @@ using StoreSystem.Application.Contract.SaleContract.Res;
 
 namespace StoreSystem.Application.Interfaces
 {
-    /// <summary>
-    /// Service for handling sales.
-    /// </summary>
+
     public interface ISaleService
     {
         Task<GeneralResponse<int>> CreateSaleAsync(SaleReq req);
