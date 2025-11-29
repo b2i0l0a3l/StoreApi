@@ -1,12 +1,8 @@
 using StoreSystem.Core.Interfaces;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using BookingSystem.Core.enums;
 using StoreSystem.Core.Entities;
 using MediatR;
 using StoreSystem.Core.Events.SaleEvent;
-using StoreSystem.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace StoreSystem.Application.Events.Handlers
@@ -17,7 +13,7 @@ namespace StoreSystem.Application.Events.Handlers
         private readonly IRepository<Inventory> _inventoryRepo;
         private readonly IRepository<Stock> _stockRepo;
         private readonly IRepository<StockMovement> _movementRepo;
-        private readonly IRepository<StoreSystem.Core.Entities.ProcessedEvent> _eventRepo;
+        private readonly IRepository<ProcessedEvent> _eventRepo;
         private readonly IUniteOfWork _uow;
         private ILogger<SalesReturnCreatedEventHandler> _logger;
 
@@ -25,7 +21,7 @@ namespace StoreSystem.Application.Events.Handlers
             IRepository<Inventory> inventoryRepo,
             IRepository<Stock> stockRepo,
             IRepository<StockMovement> movementRepo,
-            IRepository<StoreSystem.Core.Entities.ProcessedEvent> eventRepo,
+            IRepository<ProcessedEvent> eventRepo,
             IUniteOfWork uow,
             ILogger<SalesReturnCreatedEventHandler> logger)
         {
@@ -45,13 +41,15 @@ namespace StoreSystem.Application.Events.Handlers
                 var existing = await _eventRepo.FindAsync(e => e.EventType == nameof(SalesReturnCreatedEvent) && e.AggregateId == notification.SaleId.ToString());
                 if (existing != null) return;
 
-                await _eventRepo.AddAsync(new StoreSystem.Core.Entities.ProcessedEvent
+                await _eventRepo.AddAsync(new ProcessedEvent
                 {
                     EventType = nameof(SalesReturnCreatedEvent),
                     AggregateId = notification.SaleId.ToString(),
                     ProcessedAt = DateTime.UtcNow
                 });
+
                 await _uow.Commit();
+
                 var sale = await _salesRepo.FindAsync(s => s.Id == notification.SaleId);
                 if (sale == null) return;
 
@@ -75,6 +73,7 @@ namespace StoreSystem.Application.Events.Handlers
 
                     stock.Quantity += item.Qty;
                     stock.LastUpdated = DateTime.UtcNow;
+                
                     await _stockRepo.UpdateAsync(stock);
                     await _uow.Commit();
 

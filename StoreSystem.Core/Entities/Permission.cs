@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 
 namespace StoreSystem.Core.Entities
 {
-    public class Permission : baseEntity
+    public class Permission 
     {
+        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
 

@@ -14,6 +14,8 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using StoreSystem.Application.Contract.StockMovementContract.validator;
 using StoreSystem.Application.Contract.StoreContract.validator;
+using StoreSystem.Application.Services.PurchaseService;
+using StoreSystem.Application.Services.ReturnService;
 using StoreSystem.Application.Services.ProductService;
 using StoreSystem.Application.Services.StockMovementService;
 using StoreSystem.Application.Services.StoreService;
@@ -46,7 +48,8 @@ namespace StoreSystem.Application.ServiceRegistration
             services.AddScoped<IAuth, AuthService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IProductService, ProductService>();
-            // services.AddScoped<IPurchaseService, PurchaseService>();
+            services.AddScoped<IPurchaseService, PurchaseService>();
+            services.AddScoped<IReturnService, ReturnService>();
             services.AddScoped<IStoreService, StoreService>();
             services.AddScoped<IStockMovementService, StockMovementService>();
             services.AddScoped<IInventoryService, InventoryService>();

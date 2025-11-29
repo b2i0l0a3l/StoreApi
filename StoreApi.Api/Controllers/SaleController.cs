@@ -4,6 +4,8 @@ using StoreSystem.Application.Contract.SaleContract.Req;
 using StoreSystem.Application.Contract.Common;
 using StoreApi.Api.Attributes;
 using StoreSystem.Core.Constants;
+using StoreSystem.Application.Contract.SaleContract.Res;
+using StoreSystem.Core.common;
 
 namespace StoreApi.Api.Controllers
 {
@@ -23,13 +25,13 @@ namespace StoreApi.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [RequirePermission(PermissionCodes.SalesRead)]
-        public async Task<ActionResult<GeneralResponse<object?>>> GetById(int id)
+        public async Task<ActionResult<GeneralResponse<SaleRes>>> GetById(int id)
             => Ok(await _service.GetByIdAsync(id));
 
         [HttpGet("All")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [RequirePermission(PermissionCodes.SalesRead)]
-        public async Task<ActionResult<GeneralResponse<object?>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+        public async Task<ActionResult<GeneralResponse<PagedResult<SaleRes>>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
             => Ok(await _service.GetAllAsync(pageNumber, pageSize));
     }
 }

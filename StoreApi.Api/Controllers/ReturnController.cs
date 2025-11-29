@@ -5,6 +5,8 @@ using StoreSystem.Application.Interfaces;
 using StoreSystem.Application.Contract.ReturnContract.Req;
 using StoreSystem.Application.Contract.Common;
 using Microsoft.AspNetCore.Authorization;
+using StoreApi.Api.Attributes;
+using StoreSystem.Core.Constants;
 
 namespace StoreApi.Api.Controllers
 {
@@ -17,11 +19,13 @@ namespace StoreApi.Api.Controllers
 
         [HttpPost("SalesReturn")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [RequirePermission(PermissionCodes.ReturnCreate)]
         public async Task<ActionResult<GeneralResponse<int>>> SalesReturn([FromBody] SalesReturnReq req)
             => Ok(await _service.CreateSalesReturnAsync(req));
 
         [HttpPost("PurchaseReturn")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [RequirePermission(PermissionCodes.ReturnCreate)]
         public async Task<ActionResult<GeneralResponse<int>>> PurchaseReturn([FromBody] PurchaseReturnReq req)
             => Ok(await _service.CreatePurchaseReturnAsync(req));
     }

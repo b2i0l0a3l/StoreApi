@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,11 +9,12 @@ namespace StoreSystem.Core.Entities
 {
     public class SalesItem : baseEntity
     {
+        [Required]
         public int SalesInvoiceId { get; set; }
 
         [ForeignKey("SalesInvoiceId")]
         public SalesInvoice SalesInvoice { get; set; } = new SalesInvoice();
-
+        [Required]
         public int ProductId { get; set; }
 
         [ForeignKey("ProductId")]

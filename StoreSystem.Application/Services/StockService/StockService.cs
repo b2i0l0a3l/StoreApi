@@ -33,7 +33,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> CreateStockAsync(StockReq req)
         {
-            if (IsUserAuthorized())
+            if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -50,7 +50,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> IncreaseStockAsync(StockReq req)
         {
-            if (IsUserAuthorized())
+            if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -85,7 +85,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> DecreaseStockAsync(StockReq req)
         {
-             if (IsUserAuthorized())
+             if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -118,7 +118,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> AdjustStockAsync(StockReq req)
         {
-            if (IsUserAuthorized())
+            if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -151,7 +151,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> GetCurrentStockAsync(StockReq req)
         {
-             if (IsUserAuthorized())
+             if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -164,21 +164,19 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> GetLowStockProductsAsync(StockReq req)
         {
-             if (IsUserAuthorized())
+             if (IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
             
-            var all = await _productRepo.GetAllAsync(1, int.MaxValue);
+            var all = await _productRepo.GetAllAsync(1, int.MaxValue, p => p.StoreId == _CurrentUserService.StoreId);
             var lowCount = all.Items.Count(p => p.StockQuantity < req.Quantity);
             return GeneralResponse<int>.Success(lowCount, "Ok", 200);
         }
 
-        private bool IsUserAuthorized()
+        private bool IsUserUnauthorized()
         {
-            if (_CurrentUserService.UserId == null || _CurrentUserService.InventoryId == null)
-                return false;
-            return true;
+            return _CurrentUserService.UserId == null || _CurrentUserService.InventoryId == null;
         }
   
     }

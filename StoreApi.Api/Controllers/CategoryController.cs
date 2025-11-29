@@ -22,11 +22,6 @@ namespace CategoryApi.Api.Controllers
             _service = service;
         }
 
-        [HttpPost("GetAllCategories")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [RequirePermission(PermissionCodes.CategoryRead)]
-        public async Task<ActionResult<GeneralResponse<PagedResult<CategoryReq>>>> GetAllCategories(GetCategoryReq Category)
-        => Ok(await _service.GetAllAsync(Category));
         
         [HttpPost("GetAllCategoriesForStore")]
         [ProducesResponseType(StatusCodes.Status200OK)]

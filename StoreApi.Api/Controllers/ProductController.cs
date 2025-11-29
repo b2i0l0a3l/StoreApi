@@ -14,7 +14,6 @@ namespace StoreApi.Api.Controllers
 {
     [ApiController]
     [Route("api/Product")]
-    // [Authorize] - Replaced by specific permissions
     public class ProductController : ControllerBase
     {
         private readonly IProductService _service;
@@ -22,8 +21,6 @@ namespace StoreApi.Api.Controllers
 
         [HttpGet("GetAllProducts")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.ProductRead)]
         public async Task<ActionResult<GeneralResponse<PagedResult<ProductRes>>>> GetAllProducts([FromQuery] GetProductReq Product)
         {
@@ -31,8 +28,6 @@ namespace StoreApi.Api.Controllers
         }
         [HttpGet("{ProductId}", Name = "GetProductById")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.ProductRead)]
         public async Task<ActionResult<GeneralResponse<ProductRes>>> GetProductById(int ProductId)
         {
@@ -41,8 +36,6 @@ namespace StoreApi.Api.Controllers
 
         [HttpDelete("{ProductId}", Name = "DeleteProduct")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.ProductDelete)]
         public async Task<ActionResult<GeneralResponse<bool?>>> DeleteProduct(int ProductId)
         {
@@ -50,8 +43,6 @@ namespace StoreApi.Api.Controllers
         }
         [HttpPut("UpdateProduct")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.ProductUpdate)]
         public async Task<ActionResult<GeneralResponse<bool?>>> UpdateProduct([FromBody] ProductReq Product, int ProductId)
         {
@@ -60,8 +51,6 @@ namespace StoreApi.Api.Controllers
 
         [HttpPost("AddProduct")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [RequirePermission(PermissionCodes.ProductCreate)]
         public async Task<ActionResult<GeneralResponse<int>>> AddProduct([FromBody] ProductReq Product)
         {

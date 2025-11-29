@@ -18,20 +18,29 @@ namespace StoreSystem.Application.Services.StockMovementService
         private readonly ILogger<StockMovementService> _logger;
         private readonly IMapper _mapper;
         private readonly StockMovementValidator _validator;
+        private readonly ICurrentUserService _currentUserService;
 
         public StockMovementService(IRepository<Product> productRepo,
-            IMapper mapper, StockMovementValidator validator, ILogger<StockMovementService> logger, IRepository<StockMovement> movementRepo)
+            IMapper mapper, StockMovementValidator validator, ILogger<StockMovementService> logger, IRepository<StockMovement> movementRepo, ICurrentUserService currentUserService)
         {
             _movementRepo = movementRepo;
             _logger = logger;
             _validator = validator;
             _mapper = mapper;
             _productRepo = productRepo;
+            _currentUserService = currentUserService;
         }
 
         public async Task<GeneralResponse<int>> AddMovementAsync(StockMovementReq req)
         {
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<int>.Failure("Unauthorized", 401);
+
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
+
+            // Verify the product belongs to the current store
+            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _currentUserService.StoreId.Value);
+            if (product == null) return GeneralResponse<int>.Failure("Product not found", 404);
 
             var entity = new StockMovement
             {
@@ -48,19 +57,15 @@ namespace StoreSystem.Application.Services.StockMovementService
             await _movementRepo.SaveAsync();
 
             // update product aggregated stock
-            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId);
-            if (product != null)
-            {
-                if (req.Type == BookingSystem.Core.enums.MovementType.In)
-                    product.StockQuantity += req.Qty;
-                else if (req.Type == BookingSystem.Core.enums.MovementType.Out)
-                    product.StockQuantity -= req.Qty;
-                else // Adjustment
-                    product.StockQuantity = product.StockQuantity + req.Qty; // assume qty can be negative/positive
+            if (req.Type == BookingSystem.Core.enums.MovementType.In)
+                product.StockQuantity += req.Qty;
+            else if (req.Type == BookingSystem.Core.enums.MovementType.Out)
+                product.StockQuantity -= req.Qty;
+            else // Adjustment
+                product.StockQuantity = product.StockQuantity + req.Qty; // assume qty can be negative/positive
 
-                await _productRepo.UpdateAsync(product);
-                await _productRepo.SaveAsync();
-            }
+            await _productRepo.UpdateAsync(product);
+            await _productRepo.SaveAsync();
 
             // publish domain event (if needed, using IMediator in future)
 
@@ -69,6 +74,13 @@ namespace StoreSystem.Application.Services.StockMovementService
 
         public async Task<GeneralResponse<PagedResult<StockMovementRes>>> GetMovementsByProductAsync(int productId, int pageNumber, int pageSize)
         {
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<PagedResult<StockMovementRes>>.Failure("Unauthorized", 401);
+
+            // Verify the product belongs to the current store
+            var product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
+            if (product == null) return GeneralResponse<PagedResult<StockMovementRes>>.Failure("Product not found", 404);
+
             var page = await _movementRepo.GetAllAsync(pageNumber, pageSize, m => m.ProductId == productId, q => q.OrderByDescending(x => x.Date));
             var mapped = new PagedResult<StockMovementRes>
             {
@@ -93,24 +105,27 @@ namespace StoreSystem.Application.Services.StockMovementService
 
         public async Task<GeneralResponse<bool?>> UndoLastMovementAsync(int productId)
         {
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<bool?>.Failure("Unauthorized", 401);
+
+            // Verify the product belongs to the current store
+            var product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
+            if (product == null) return GeneralResponse<bool?>.Failure("Product not found", 404);
+
             var page = await _movementRepo.GetAllAsync(1, 1, m => m.ProductId == productId, q => q.OrderByDescending(x => x.Date));
             var last = page.Items.FirstOrDefault();
             if (last == null) return GeneralResponse<bool?>.Failure("No movements", 404);
 
             // revert product stock
-            var product = await _productRepo.FindAsync(p => p.Id == productId);
-            if (product != null)
-            {
-                if (last.Type == BookingSystem.Core.enums.MovementType.In)
-                    product.StockQuantity -= last.Qty;
-                else if (last.Type == BookingSystem.Core.enums.MovementType.Out)
-                    product.StockQuantity += last.Qty;
-                else
-                    product.StockQuantity -= last.Qty; // best-effort revert
+            if (last.Type == BookingSystem.Core.enums.MovementType.In)
+                product.StockQuantity -= last.Qty;
+            else if (last.Type == BookingSystem.Core.enums.MovementType.Out)
+                product.StockQuantity += last.Qty;
+            else
+                product.StockQuantity -= last.Qty; // best-effort revert
 
-                await _productRepo.UpdateAsync(product);
-                await _productRepo.SaveAsync();
-            }
+            await _productRepo.UpdateAsync(product);
+            await _productRepo.SaveAsync();
 
             _movementRepo.DeleteAsync(last);
             await _movementRepo.SaveAsync();

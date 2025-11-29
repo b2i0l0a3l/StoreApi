@@ -74,6 +74,10 @@ namespace StoreSystem.Core.Constants
         public const string PaymentUpdate = "Payment.Update";
         public const string PaymentDelete = "Payment.Delete";
 
+        // Return Permissions
+        public const string ReturnCreate = "Return.Create";
+        public const string ReturnRead = "Return.Read";
+
         /// <summary>
         /// Get all permission codes
         /// </summary>
@@ -91,7 +95,8 @@ namespace StoreSystem.Core.Constants
                 DashboardView, ReportsView,
                 StoreCreate, StoreRead, StoreUpdate, StoreDelete,
                 EmployeeCreate, EmployeeRead, EmployeeUpdate, EmployeeDelete,
-                PaymentCreate, PaymentRead, PaymentUpdate, PaymentDelete
+                PaymentCreate, PaymentRead, PaymentUpdate, PaymentDelete,
+                ReturnCreate, ReturnRead
             };
         }
     }

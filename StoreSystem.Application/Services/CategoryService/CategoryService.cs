@@ -6,17 +6,17 @@ using StoreSystem.Application.Contract.Categories.Validator;
 using StoreSystem.Application.Interfaces;
 using StoreSystem.Core.Entities;
 using StoreSystem.Application.Contract.Common;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using FluentValidation;
 
 namespace StoreSystem.Application.Services.CategoryService
 {
     public class CategoryService : ICategoryService
     {
         private readonly IRepository<Category> _repo;
-        private CategoryValidator _validator;
+        private IValidator<CategoryReq> _validator;
         private ICurrentUserService _CurrentUserService;
 
-        public CategoryService(ICurrentUserService currentUserService,IRepository<Category> repo, CategoryValidator validations)
+        public CategoryService(ICurrentUserService currentUserService,IRepository<Category> repo, IValidator<CategoryReq> validations)
         {
             _repo = repo;
             _validator = validations;
@@ -28,12 +28,11 @@ namespace StoreSystem.Application.Services.CategoryService
             if (entity == null )
                 return GeneralResponse<int>.Failure("Invalid Data", 400);
 
-            var result = IsEntityValid(entity);
+            var result = await ValidateRequest.IsValid<CategoryReq>(_validator,entity);
 
             if (!result.Item1)
             {
                 return GeneralResponse<int>.Failure(string.Join(" ,", result.Item2));
-
             }            
        
             Category category = new Category { Name = entity.Name, InventoryId = _CurrentUserService.InventoryId ?? 0, CreateByUserId = _CurrentUserService.UserId, UpdateByUserId = _CurrentUserService.UserId };
@@ -69,28 +68,8 @@ namespace StoreSystem.Application.Services.CategoryService
             await _repo.SaveAsync();
             return  GeneralResponse<bool?>.Success(null , "Category deleted Successfully", 200);
         }  
-        public async Task<GeneralResponse<PagedResult<CategoryRes>>> GetAllAsync(GetCategoryReq entity)
-        {
 
-
-
-
-
-            PagedResult<Category> r = await _repo.GetAllAsync(entity.PageNumber, entity.PageSize);
-            if (r != null && r.Items.Any())
-            {
-                PagedResult<CategoryRes> result = new()
-                {
-                    Items = r.Items.Select(x => new CategoryRes { Name = x.Name, Id = x.Id, CreateAt = x.CreatedAt }),
-                    PageNumber = r.PageNumber,
-                    PageSize = r.PageSize,
-                    TotalItems = r.TotalItems
-                };
-                return GeneralResponse<PagedResult<CategoryRes>>.Success(result, "success", 200);
-            }
-            return GeneralResponse<PagedResult<CategoryRes>>.Failure("There is no Category!", 404);
-
-        }
+         
         public async Task<GeneralResponse<PagedResult<CategoryRes>>> GetAllForStoreAsync(GetCategoryReq entity)
         {
 
@@ -98,7 +77,9 @@ namespace StoreSystem.Application.Services.CategoryService
                 return GeneralResponse<PagedResult<CategoryRes>>.Failure("Invalid Data", 400);
 
 
-            PagedResult<Category> r = await _repo.GetAllAsync(entity.PageNumber, entity.PageSize, x=>x.InventoryId == _CurrentUserService.InventoryId || x.Inventory!.StoreId == _CurrentUserService.StoreId);
+            PagedResult<Category> r = await _repo.GetAllAsync(entity.PageNumber, entity.PageSize, x => 
+                (x.InventoryId == _CurrentUserService.InventoryId || x.Inventory!.StoreId == _CurrentUserService.StoreId) &&
+                (string.IsNullOrEmpty(entity.Name) || x.Name.Contains(entity.Name)));
             if (r != null && r.Items.Any())
             {
                 PagedResult<CategoryRes> result = new()
@@ -130,13 +111,13 @@ namespace StoreSystem.Application.Services.CategoryService
             if (Id < 1 || entity == null)
                 return GeneralResponse<bool?>.Failure("Invalid Data", 400);
            
-            var result = IsEntityValid(entity);
+            var result = await ValidateRequest.IsValid<CategoryReq>(_validator,entity);
 
             if (!result.Item1)
             {
                 return GeneralResponse<bool?>.Failure(string.Join(" ,", result.Item2));
             }
-
+            
             Category? category = await _repo.FindAsync(x => x.Id == Id && (x.InventoryId == _CurrentUserService.InventoryId || x.Inventory!.StoreId == _CurrentUserService.StoreId));
             if (category == null)
                 return GeneralResponse<bool?>.Failure($"Category with Id : {Id} Not Found", 404);
@@ -149,18 +130,6 @@ namespace StoreSystem.Application.Services.CategoryService
             await _repo.SaveAsync();
             return GeneralResponse<bool?>.Success(null, "success", 201);
 
-        }
-       
-   
-        private Tuple<bool, string> IsEntityValid(CategoryReq entity)
-        {
-            var result = _validator.Validate(entity);
-            if (!result.IsValid)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.ErrorMessage));
-                return new Tuple<bool, string>(false, errors);
-            }
-            return new Tuple<bool, string>(true, "");
         }
         
     }

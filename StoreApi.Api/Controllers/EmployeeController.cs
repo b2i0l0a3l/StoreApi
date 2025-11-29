@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using StoreSystem.Application.Interfaces;
 using StoreSystem.Application.Contract.EmployeeContract.Req;
+using StoreApi.Api.Attributes;
+using StoreSystem.Core.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookingApi.Api.Controllers
 {
     [ApiController]
     [Route("api/employees")]
+    [Authorize("Admin,User")]
     public class EmployeeController : ControllerBase
     {
         private readonly IEmployeeService _service;
@@ -15,21 +19,25 @@ namespace BookingApi.Api.Controllers
             _service = service;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(EmployeeReq req)
+        [HttpPost("Add")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> Add(EmployeeReq req)
         {
             var res = await _service.CreateEmployeeAsync(req);
             return StatusCode(res.StatusCode, res);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id}",Name ="Update")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Update(int id, EmployeeReq req)
         {
             var res = await _service.UpdateEmployeeAsync(id, req);
             return StatusCode(res.StatusCode, res);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}", Name = "Delete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+
         public async Task<IActionResult> Delete(int id)
         {
             var res = await _service.DeleteEmployeeAsync(id);
@@ -37,6 +45,8 @@ namespace BookingApi.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+
         public async Task<IActionResult> Get(int id)
         {
             var res = await _service.GetByIdAsync(id);
@@ -44,10 +54,9 @@ namespace BookingApi.Api.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-        {
-            var res = await _service.GetAllAsync(page, pageSize);
-            return StatusCode(res.StatusCode, res);
-        }
+        => Ok(await _service.GetAllAsync(page, pageSize));
+        
     }
 }

@@ -11,8 +11,8 @@ using StoreSystem.Infrastructure.Persistence;
 namespace StoreSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251128202031_SeedDefaultPermissions")]
-    partial class SeedDefaultPermissions
+    [Migration("20251129195647_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -307,6 +307,9 @@ namespace StoreSystem.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("StoreId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("UpdateByUserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -323,6 +326,8 @@ namespace StoreSystem.Infrastructure.Migrations
 
                     b.HasIndex("Phone")
                         .HasDatabaseName("IX_Customer_Phone");
+
+                    b.HasIndex("StoreId");
 
                     b.HasIndex("UpdateByUserId");
 
@@ -401,6 +406,9 @@ namespace StoreSystem.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("StoreId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("SupplierId")
                         .HasColumnType("INTEGER");
 
@@ -416,6 +424,8 @@ namespace StoreSystem.Infrastructure.Migrations
                     b.HasIndex("CreateByUserId");
 
                     b.HasIndex("InvoiceId");
+
+                    b.HasIndex("StoreId");
 
                     b.HasIndex("UpdateByUserId");
 
@@ -433,30 +443,15 @@ namespace StoreSystem.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CreateByUserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UpdateByUserId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
-
-                    b.HasIndex("CreateByUserId");
-
-                    b.HasIndex("UpdateByUserId");
 
                     b.ToTable("Permissions");
 
@@ -465,379 +460,265 @@ namespace StoreSystem.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "Product.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(3200),
-                            Name = "Product Create",
-                            UpdateByUserId = "system"
+                            Name = "Product Create"
                         },
                         new
                         {
                             Id = 2,
                             Code = "Product.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(5734),
-                            Name = "Product Read",
-                            UpdateByUserId = "system"
+                            Name = "Product Read"
                         },
                         new
                         {
                             Id = 3,
                             Code = "Product.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(6160),
-                            Name = "Product Update",
-                            UpdateByUserId = "system"
+                            Name = "Product Update"
                         },
                         new
                         {
                             Id = 4,
                             Code = "Product.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(6168),
-                            Name = "Product Delete",
-                            UpdateByUserId = "system"
+                            Name = "Product Delete"
                         },
                         new
                         {
                             Id = 5,
                             Code = "Category.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(9937),
-                            Name = "Category Create",
-                            UpdateByUserId = "system"
+                            Name = "Category Create"
                         },
                         new
                         {
                             Id = 6,
                             Code = "Category.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 990, DateTimeKind.Utc).AddTicks(9998),
-                            Name = "Category Read",
-                            UpdateByUserId = "system"
+                            Name = "Category Read"
                         },
                         new
                         {
                             Id = 7,
                             Code = "Category.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(7),
-                            Name = "Category Update",
-                            UpdateByUserId = "system"
+                            Name = "Category Update"
                         },
                         new
                         {
                             Id = 8,
                             Code = "Category.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(13),
-                            Name = "Category Delete",
-                            UpdateByUserId = "system"
+                            Name = "Category Delete"
                         },
                         new
                         {
                             Id = 9,
                             Code = "Sales.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(19),
-                            Name = "Sales Create",
-                            UpdateByUserId = "system"
+                            Name = "Sales Create"
                         },
                         new
                         {
                             Id = 10,
                             Code = "Sales.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(28),
-                            Name = "Sales Read",
-                            UpdateByUserId = "system"
+                            Name = "Sales Read"
                         },
                         new
                         {
                             Id = 11,
                             Code = "Sales.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(34),
-                            Name = "Sales Update",
-                            UpdateByUserId = "system"
+                            Name = "Sales Update"
                         },
                         new
                         {
                             Id = 12,
                             Code = "Sales.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(41),
-                            Name = "Sales Delete",
-                            UpdateByUserId = "system"
+                            Name = "Sales Delete"
                         },
                         new
                         {
                             Id = 13,
                             Code = "Purchase.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(47),
-                            Name = "Purchase Create",
-                            UpdateByUserId = "system"
+                            Name = "Purchase Create"
                         },
                         new
                         {
                             Id = 14,
                             Code = "Purchase.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(53),
-                            Name = "Purchase Read",
-                            UpdateByUserId = "system"
+                            Name = "Purchase Read"
                         },
                         new
                         {
                             Id = 15,
                             Code = "Purchase.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(59),
-                            Name = "Purchase Update",
-                            UpdateByUserId = "system"
+                            Name = "Purchase Update"
                         },
                         new
                         {
                             Id = 16,
                             Code = "Purchase.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(65),
-                            Name = "Purchase Delete",
-                            UpdateByUserId = "system"
+                            Name = "Purchase Delete"
                         },
                         new
                         {
                             Id = 17,
                             Code = "Stock.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(100),
-                            Name = "Stock Create",
-                            UpdateByUserId = "system"
+                            Name = "Stock Create"
                         },
                         new
                         {
                             Id = 18,
                             Code = "Stock.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(110),
-                            Name = "Stock Read",
-                            UpdateByUserId = "system"
+                            Name = "Stock Read"
                         },
                         new
                         {
                             Id = 19,
                             Code = "Stock.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(117),
-                            Name = "Stock Update",
-                            UpdateByUserId = "system"
+                            Name = "Stock Update"
                         },
                         new
                         {
                             Id = 20,
                             Code = "Stock.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(123),
-                            Name = "Stock Delete",
-                            UpdateByUserId = "system"
+                            Name = "Stock Delete"
                         },
                         new
                         {
                             Id = 21,
                             Code = "Customer.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(130),
-                            Name = "Customer Create",
-                            UpdateByUserId = "system"
+                            Name = "Customer Create"
                         },
                         new
                         {
                             Id = 22,
                             Code = "Customer.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(136),
-                            Name = "Customer Read",
-                            UpdateByUserId = "system"
+                            Name = "Customer Read"
                         },
                         new
                         {
                             Id = 23,
                             Code = "Customer.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(142),
-                            Name = "Customer Update",
-                            UpdateByUserId = "system"
+                            Name = "Customer Update"
                         },
                         new
                         {
                             Id = 24,
                             Code = "Customer.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(148),
-                            Name = "Customer Delete",
-                            UpdateByUserId = "system"
+                            Name = "Customer Delete"
                         },
                         new
                         {
                             Id = 25,
                             Code = "Supplier.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(153),
-                            Name = "Supplier Create",
-                            UpdateByUserId = "system"
+                            Name = "Supplier Create"
                         },
                         new
                         {
                             Id = 26,
                             Code = "Supplier.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(159),
-                            Name = "Supplier Read",
-                            UpdateByUserId = "system"
+                            Name = "Supplier Read"
                         },
                         new
                         {
                             Id = 27,
                             Code = "Supplier.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(165),
-                            Name = "Supplier Update",
-                            UpdateByUserId = "system"
+                            Name = "Supplier Update"
                         },
                         new
                         {
                             Id = 28,
                             Code = "Supplier.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(171),
-                            Name = "Supplier Delete",
-                            UpdateByUserId = "system"
+                            Name = "Supplier Delete"
                         },
                         new
                         {
                             Id = 29,
                             Code = "Dashboard.View",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(183),
-                            Name = "Dashboard View",
-                            UpdateByUserId = "system"
+                            Name = "Dashboard View"
                         },
                         new
                         {
                             Id = 30,
                             Code = "Reports.View",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(190),
-                            Name = "Reports View",
-                            UpdateByUserId = "system"
+                            Name = "Reports View"
                         },
                         new
                         {
                             Id = 31,
                             Code = "Store.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(196),
-                            Name = "Store Create",
-                            UpdateByUserId = "system"
+                            Name = "Store Create"
                         },
                         new
                         {
                             Id = 32,
                             Code = "Store.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(201),
-                            Name = "Store Read",
-                            UpdateByUserId = "system"
+                            Name = "Store Read"
                         },
                         new
                         {
                             Id = 33,
                             Code = "Store.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(208),
-                            Name = "Store Update",
-                            UpdateByUserId = "system"
+                            Name = "Store Update"
                         },
                         new
                         {
                             Id = 34,
                             Code = "Store.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(218),
-                            Name = "Store Delete",
-                            UpdateByUserId = "system"
+                            Name = "Store Delete"
                         },
                         new
                         {
                             Id = 35,
                             Code = "Employee.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(225),
-                            Name = "Employee Create",
-                            UpdateByUserId = "system"
+                            Name = "Employee Create"
                         },
                         new
                         {
                             Id = 36,
                             Code = "Employee.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(393),
-                            Name = "Employee Read",
-                            UpdateByUserId = "system"
+                            Name = "Employee Read"
                         },
                         new
                         {
                             Id = 37,
                             Code = "Employee.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(405),
-                            Name = "Employee Update",
-                            UpdateByUserId = "system"
+                            Name = "Employee Update"
                         },
                         new
                         {
                             Id = 38,
                             Code = "Employee.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(412),
-                            Name = "Employee Delete",
-                            UpdateByUserId = "system"
+                            Name = "Employee Delete"
                         },
                         new
                         {
                             Id = 39,
                             Code = "Payment.Create",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(419),
-                            Name = "Payment Create",
-                            UpdateByUserId = "system"
+                            Name = "Payment Create"
                         },
                         new
                         {
                             Id = 40,
                             Code = "Payment.Read",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(426),
-                            Name = "Payment Read",
-                            UpdateByUserId = "system"
+                            Name = "Payment Read"
                         },
                         new
                         {
                             Id = 41,
                             Code = "Payment.Update",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(431),
-                            Name = "Payment Update",
-                            UpdateByUserId = "system"
+                            Name = "Payment Update"
                         },
                         new
                         {
                             Id = 42,
                             Code = "Payment.Delete",
-                            CreateByUserId = "system",
-                            CreatedAt = new DateTime(2025, 11, 28, 20, 20, 27, 991, DateTimeKind.Utc).AddTicks(436),
-                            Name = "Payment Delete",
-                            UpdateByUserId = "system"
+                            Name = "Payment Delete"
+                        },
+                        new
+                        {
+                            Id = 43,
+                            Code = "Return.Create",
+                            Name = "Return Create"
+                        },
+                        new
+                        {
+                            Id = 44,
+                            Code = "Return.Read",
+                            Name = "Return Read"
                         });
                 });
 
@@ -1468,6 +1349,9 @@ namespace StoreSystem.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("StoreId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("UpdateByUserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1484,6 +1368,8 @@ namespace StoreSystem.Infrastructure.Migrations
 
                     b.HasIndex("Phone")
                         .HasDatabaseName("IX_Supplier_Phone");
+
+                    b.HasIndex("StoreId");
 
                     b.HasIndex("UpdateByUserId");
 
@@ -1642,6 +1528,12 @@ namespace StoreSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StoreSystem.Core.Entities.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StoreSystem.Core.Entities.ApplicationUser", "UpdateByUser")
                         .WithMany()
                         .HasForeignKey("UpdateByUserId")
@@ -1649,6 +1541,8 @@ namespace StoreSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CreateByUser");
+
+                    b.Navigation("Store");
 
                     b.Navigation("UpdateByUser");
                 });
@@ -1694,22 +1588,9 @@ namespace StoreSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_Payment_SalesInvoice");
 
-                    b.HasOne("StoreSystem.Core.Entities.ApplicationUser", "UpdateByUser")
+                    b.HasOne("StoreSystem.Core.Entities.Store", "Store")
                         .WithMany()
-                        .HasForeignKey("UpdateByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreateByUser");
-
-                    b.Navigation("UpdateByUser");
-                });
-
-            modelBuilder.Entity("StoreSystem.Core.Entities.Permission", b =>
-                {
-                    b.HasOne("StoreSystem.Core.Entities.ApplicationUser", "CreateByUser")
-                        .WithMany()
-                        .HasForeignKey("CreateByUserId")
+                        .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1720,6 +1601,8 @@ namespace StoreSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CreateByUser");
+
+                    b.Navigation("Store");
 
                     b.Navigation("UpdateByUser");
                 });
@@ -2132,6 +2015,12 @@ namespace StoreSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StoreSystem.Core.Entities.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StoreSystem.Core.Entities.ApplicationUser", "UpdateByUser")
                         .WithMany()
                         .HasForeignKey("UpdateByUserId")
@@ -2139,6 +2028,8 @@ namespace StoreSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CreateByUser");
+
+                    b.Navigation("Store");
 
                     b.Navigation("UpdateByUser");
                 });

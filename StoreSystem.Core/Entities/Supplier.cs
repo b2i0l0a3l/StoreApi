@@ -29,6 +29,11 @@ namespace StoreSystem.Core.Entities
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Balance { get; set; }
 
+        public int StoreId { get; set; }
+
+        [ForeignKey("StoreId")]
+        public Store? Store { get; set; }
+
         public ICollection<SupplierProduct> supplierProducts = new List<SupplierProduct>();
         
         public ICollection<PurchaseInvoice> PurchaseInvoices { get; set; } = new List<PurchaseInvoice>();

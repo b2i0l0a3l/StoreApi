@@ -10,37 +10,53 @@ using MediatR;
 using StoreSystem.Application.Contract.SaleContract.Req;
 using StoreSystem.Application.Contract.SaleContract.Res;
 using StoreSystem.Application.Interfaces;
+using FluentValidation;
+using StoreSystem.Application.Contract.ReturnContract.Req;
+using StoreSystem.Core.Events.SaleEvent;
 
 namespace StoreSystem.Application.Services.SaleService
 {
-    /// <summary>
-    /// Handles sales creation and queries.
-    /// </summary>
+
     public class SaleService : ISaleService
     {
         private readonly IRepository<SalesInvoice> _saleRepo;
         private readonly IUniteOfWork _uow;
-        private readonly IMediator _mediator;
+        private readonly IEventBus _mediator;
         private readonly AutoMapper.IMapper _mapper;
+        private readonly IValidator<SaleReq> _Validator;
+        private readonly ICurrentUserService _currentUserService;
 
-        public SaleService(IRepository<SalesInvoice> saleRepo, IUniteOfWork uow, IMediator mediator, AutoMapper.IMapper mapper)
+        public SaleService(IValidator<SaleReq> Validator,IRepository<SalesInvoice> saleRepo, IUniteOfWork uow, IEventBus mediator, AutoMapper.IMapper mapper, ICurrentUserService currentUserService)
         {
             _saleRepo = saleRepo;
             _uow = uow;
             _mediator = mediator;
             _mapper = mapper;
+            _currentUserService = currentUserService;
+            _Validator = Validator;
         }
 
         public async Task<GeneralResponse<int>> CreateSaleAsync(SaleReq req)
         {
-            if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<int>.Failure("Unauthorized", 401);
 
+            if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
+           
+            var result = await ValidateRequest.IsValid<SaleReq>(_Validator,req);
+            if (!result.Item1)
+            {
+                return GeneralResponse<int>.Failure(string.Join(" ,", result.Item2));
+            }
+            
             var invoice = new SalesInvoice
             {
-                CustomerId = req.CustomerId ?? 0,
+                CustomerId = req.CustomerId,
                 Date = req.Date,
-                StoreId = req.StoreId,
-                Status = BookingSystem.Core.enums.InvoiceStatus.Pending
+                StoreId = _currentUserService.StoreId.Value,
+                Status = BookingSystem.Core.enums.InvoiceStatus.Pending,
+                CreateByUserId = _currentUserService.UserId,
+                UpdateByUserId = _currentUserService.UserId
             };
 
             foreach (var item in req.Items)
@@ -62,18 +78,21 @@ namespace StoreSystem.Application.Services.SaleService
             await _saleRepo.AddAsync(invoice);
             await _uow.CompleteAsync();
 
-            await _mediator.Publish(new StoreSystem.Core.Events.SaleEvent.SaleCreatedEvent(invoice.Id, invoice.StoreId, invoice.Date));
+            await _mediator.PublishAsync(new SaleCreatedEvent(invoice.Id, invoice.StoreId, invoice.Date));
 
             return GeneralResponse<int>.Success(invoice.Id, "Sale created", 201);
         }
 
         public async Task<GeneralResponse<SaleRes?>> GetByIdAsync(int id)
         {
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<SaleRes?>.Failure("Unauthorized", 401);
+
             if (id < 1) return GeneralResponse<SaleRes?>.Failure("Invalid id", 400);
-            var inv = await _saleRepo.FindAsync(x => x.Id == id);
+            var inv = await _saleRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (inv == null) return GeneralResponse<SaleRes?>.Failure("Not found", 404);
 
-            var res = new SaleRes
+            SaleRes res = new ()
             {
                 Id = inv.Id,
                 StoreId = inv.StoreId,
@@ -84,7 +103,7 @@ namespace StoreSystem.Application.Services.SaleService
                     ProductId = s.ProductId,
                     Quantity = s.Qty,
                     UnitPrice = s.SellPrice
-                }).ToArray()
+                }).ToList()
             };
 
             return GeneralResponse<SaleRes?>.Success(res, "Ok", 200);
@@ -92,7 +111,10 @@ namespace StoreSystem.Application.Services.SaleService
 
         public async Task<GeneralResponse<PagedResult<SaleRes>>> GetAllAsync(int pageNumber, int pageSize)
         {
-            var page = await _saleRepo.GetAllAsync(pageNumber, pageSize);
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<PagedResult<SaleRes>>.Failure("Unauthorized", 401);
+
+            var page = await _saleRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
             var mapped = new PagedResult<SaleRes>
             {
                 Items = page.Items.Select(inv => new SaleRes
@@ -101,6 +123,7 @@ namespace StoreSystem.Application.Services.SaleService
                     StoreId = inv.StoreId,
                     CustomerId = inv.CustomerId,
                     Date = inv.Date,
+                    StatusEnum = inv.Status,
                     Items = inv.SalesItems.Select(s => new SaleItemRes { ProductId = s.ProductId, Quantity = s.Qty, UnitPrice = s.SellPrice })
                 }),
                 PageNumber = page.PageNumber,
@@ -110,12 +133,17 @@ namespace StoreSystem.Application.Services.SaleService
             return GeneralResponse<PagedResult<SaleRes>>.Success(mapped, "Ok", 200);
         }
 
-        public async Task<GeneralResponse<int>> ReturnSaleAsync(StoreSystem.Application.Contract.ReturnContract.Req.SalesReturnReq req)
+        public async Task<GeneralResponse<int>> ReturnSaleAsync(SalesReturnReq req)
         {
+            if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
+                return GeneralResponse<int>.Failure("Unauthorized", 401);
+
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            // Create a return record as SalesReturnCreatedEvent; detailed return persistence handled elsewhere
-            await _mediator.Publish(new StoreSystem.Core.Events.SaleEvent.SalesReturnCreatedEvent(0, req.SaleId, req.Date));
+            var sale = await _saleRepo.FindAsync(x => x.Id == req.SaleId && x.StoreId == _currentUserService.StoreId.Value);
+            if (sale == null) return GeneralResponse<int>.Failure("Sale not found", 404);
+
+            await _mediator.PublishAsync(new SalesReturnCreatedEvent(0, req.SaleId, req.Date));
             return GeneralResponse<int>.Success(0, "Return processed (event published)", 200);
         }
     }

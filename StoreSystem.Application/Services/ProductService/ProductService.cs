@@ -96,7 +96,6 @@ namespace StoreSystem.Application.Services.ProductService
             return GeneralResponse<bool?>.Success(null, "Product updated", 200);
         }
 
-        /// <inheritdoc />
         public async Task<GeneralResponse<bool?>> DeleteAsync(int id)
         {
             if (!_CurrentUserService.IsAuthenticated)

@@ -14,6 +14,6 @@ namespace StoreSystem.Application.Interfaces
         Task<GeneralResponse<bool?>> UpdateCustomerAsync(int id, CustomerReq req);
         Task<GeneralResponse<bool?>> DeleteCustomerAsync(int id);
         Task<GeneralResponse<CustomerRes?>> GetByIdAsync(int id);
-        Task<GeneralResponse<PagedResult<CustomerRes>>> GetAllAsync(int pageNumber, int pageSize);
+        Task<GeneralResponse<PagedResult<CustomerRes>>> GetAllAsync(GetCustomerReq req);
     }
 }

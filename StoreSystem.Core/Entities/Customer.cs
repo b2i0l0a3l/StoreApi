@@ -28,6 +28,11 @@ namespace StoreSystem.Core.Entities
 
         public int LoyaltyPoints { get; set; }
 
+        public int StoreId { get; set; }
+
+        [ForeignKey("StoreId")]
+        public Store? Store { get; set; }
+
         public ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
     }
 }

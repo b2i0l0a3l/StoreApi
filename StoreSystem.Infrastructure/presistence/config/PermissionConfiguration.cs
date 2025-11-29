@@ -14,16 +14,12 @@ namespace StoreSystem.Infrastructure.Persistence.Config
             builder.Property(p => p.Code).IsRequired().HasMaxLength(100);
             builder.HasIndex(p => p.Code).IsUnique();
 
-            // Seed Permissions
             var permissions = PermissionCodes.GetAllPermissions().Select((code, index) => new Permission
             {
                 Id = index + 1,
                 Code = code,
-                Name = code.Replace(".", " "),
-                CreatedAt = DateTime.UtcNow,
-                CreateByUserId = "system",
-                UpdateByUserId = "system"
-            });
+                Name = code.Replace(".", " ")
+           });
 
             builder.HasData(permissions);
         }

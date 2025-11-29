@@ -29,5 +29,9 @@ namespace StoreSystem.Core.Entities
         [MaxLength(255)]
         public string? Note { get; set; }
     
+        public int StoreId { get; set; }
+
+        [ForeignKey("StoreId")]
+        public Store? Store { get; set; }
     }
 }
