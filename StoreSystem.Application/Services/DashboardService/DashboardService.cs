@@ -113,7 +113,8 @@ namespace StoreSystem.Application.Services.DashboardService
 
         public async Task<GeneralResponse<decimal>> GetTotalPaymentsAsync(string type = "sale", DateTime? startDate = null, DateTime? endDate = null)
         {
-            var q = _paymentRepo.Query();
+            if (!_currentUserService.StoreId.HasValue) return GeneralResponse<decimal>.Failure("Unauthorized", 401);
+            var q = _paymentRepo.Query().Where(p => p.StoreId == _currentUserService.StoreId.Value);
             if (!string.IsNullOrWhiteSpace(type))
             {
                 var t = type.ToLower() switch
@@ -255,7 +256,8 @@ namespace StoreSystem.Application.Services.DashboardService
 
         public async Task<GeneralResponse<IEnumerable<PaymentDto>>> GetRecentPaymentsAsync(int limit = 20)
         {
-            var q = _paymentRepo.Query().OrderByDescending(p => p.Date).Take(limit).Select(p => new PaymentDto { Id = p.Id, Date = p.Date, Amount = p.Amount, Type = p.Type.ToString(), RelatedEntityId = p.CustomerId ?? p.SupplierId, Notes = p.Note });
+            if (!_currentUserService.StoreId.HasValue) return GeneralResponse<IEnumerable<PaymentDto>>.Failure("Unauthorized", 401);
+            var q = _paymentRepo.Query().Where(p => p.StoreId == _currentUserService.StoreId.Value).OrderByDescending(p => p.Date).Take(limit).Select(p => new PaymentDto { Id = p.Id, Date = p.Date, Amount = p.Amount, Type = p.Type.ToString(), RelatedEntityId = p.CustomerId ?? p.SupplierId, Notes = p.Note });
             var list = await q.ToListAsync();
             return GeneralResponse<IEnumerable<PaymentDto>>.Success(list);
         }

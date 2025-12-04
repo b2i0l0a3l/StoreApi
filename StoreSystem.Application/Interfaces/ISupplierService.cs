@@ -11,6 +11,6 @@ namespace StoreSystem.Application.Interfaces
         Task<GeneralResponse<bool?>> UpdateSupplierAsync(int id, SupplierReq req);
         Task<GeneralResponse<bool?>> DeleteSupplierAsync(int id);
         Task<GeneralResponse<SupplierRes?>> GetByIdAsync(int id);
-        Task<GeneralResponse<PagedResult<SupplierRes>>> GetAllAsync(int pageNumber, int pageSize);
+        Task<GeneralResponse<PagedResult<SupplierRes>>> GetAllAsync(GetSupplierReq req);
     }
 }

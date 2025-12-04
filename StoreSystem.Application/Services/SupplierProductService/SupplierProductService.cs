@@ -41,7 +41,6 @@ namespace StoreSystem.Application.Services.SupplierProductService
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            // Verify the supplier belongs to the current store
             var supplier = await _supplierRepo.FindAsync(s => s.Id == req.SupplierId && s.StoreId == _currentUserService.StoreId.Value);
             if (supplier == null) return GeneralResponse<int>.Failure("Supplier not found", 404);
 
@@ -51,7 +50,7 @@ namespace StoreSystem.Application.Services.SupplierProductService
 
             await _repo.AddAsync(entity);
             await _uow.CompleteAsync();
-            // clear caches
+
             _cache.Remove(GetSupplierProductsKey(req.SupplierId, 1, 20));
             return GeneralResponse<int>.Success(entity.Id, "Created", 201);
         }
@@ -63,14 +62,12 @@ namespace StoreSystem.Application.Services.SupplierProductService
 
             if (id < 1 || req == null) return GeneralResponse<bool?>.Failure("Invalid data", 400);
 
-            // Verify the supplier belongs to the current store
             var supplier = await _supplierRepo.FindAsync(s => s.Id == req.SupplierId && s.StoreId == _currentUserService.StoreId.Value);
             if (supplier == null) return GeneralResponse<bool?>.Failure("Supplier not found", 404);
 
             var entity = await _repo.FindAsync(x => x.Id == id);
             if (entity == null) return GeneralResponse<bool?>.Failure("Not found", 404);
 
-            // Verify the existing supplier also belongs to the current store
             var existingSupplier = await _supplierRepo.FindAsync(s => s.Id == entity.SupplierId && s.StoreId == _currentUserService.StoreId.Value);
             if (existingSupplier == null) return GeneralResponse<bool?>.Failure("Unauthorized", 403);
 

@@ -9,6 +9,7 @@ using StoreSystem.Application.Contract.EmployeeContract.Res;
 using StoreSystem.Application.Interfaces;
 using StoreSystem.Core.Interfaces;
 using StoreSystem.Core.Entities;
+using FluentValidation;
 
 namespace StoreSystem.Application.Services.EmployeeService
 {
@@ -16,16 +17,16 @@ namespace StoreSystem.Application.Services.EmployeeService
     {
         private readonly IRepository<StoreEmployee> _empRepo;
         private readonly IUniteOfWork _uow;
-        private readonly IMediator _mediator;
         private readonly AutoMapper.IMapper _mapper;
         private readonly IMemoryCache _cache;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IValidator<EmployeeReq> _Validator;
 
-        public EmployeeService(IRepository<StoreEmployee> empRepo, IUniteOfWork uow, IMediator mediator, AutoMapper.IMapper mapper, IMemoryCache cache, ICurrentUserService currentUserService)
+        public EmployeeService(IValidator<EmployeeReq> validator,IRepository<StoreEmployee> empRepo, IUniteOfWork uow, AutoMapper.IMapper mapper, IMemoryCache cache, ICurrentUserService currentUserService)
         {
+            _Validator = validator;
             _empRepo = empRepo;
             _uow = uow;
-            _mediator = mediator;
             _mapper = mapper;
             _cache = cache;
             _currentUserService = currentUserService;
@@ -40,8 +41,11 @@ namespace StoreSystem.Application.Services.EmployeeService
                 return GeneralResponse<int>.Failure("Unauthorized", 401);
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
+
+            var Result = await ValidateRequest.IsValid<EmployeeReq>(_Validator, req);
+            if (!Result.Item1) return GeneralResponse<int>.Failure(Result.Item2, 400);
             
-            var entity = _mapper.Map<StoreEmployee>(req);
+            StoreEmployee entity = _mapper.Map<StoreEmployee>(req);
             entity.StoreId = _currentUserService.StoreId.Value;
             entity.CreateByUserId = _currentUserService.UserId;
             entity.UpdateByUserId = _currentUserService.UserId;
@@ -58,16 +62,21 @@ namespace StoreSystem.Application.Services.EmployeeService
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1 || req == null) return GeneralResponse<bool?>.Failure("Invalid data", 400);
-            var entity = await _empRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+
+            var Result = await ValidateRequest.IsValid<EmployeeReq>(_Validator, req);
+            if (!Result.Item1) return GeneralResponse<bool?>.Failure(Result.Item2, 400);
+
+            StoreEmployee? entity = await _empRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (entity == null) return GeneralResponse<bool?>.Failure("Not found", 404);
             
             entity.UserId = req.UserId;
             entity.RoleId = req.Role;
             entity.UpdateByUserId = _currentUserService.UserId;
 
-            var ok = await _empRepo.UpdateAsync(entity);
+            bool ok = await _empRepo.UpdateAsync(entity);
             if (!ok) return GeneralResponse<bool?>.Failure("Could not update", 500);
             await _uow.CompleteAsync();
+
             _cache.Remove(GetByIdCacheKey(id));
             _cache.Remove(GetAllCacheKey(1, 10));
             return GeneralResponse<bool?>.Success(true, "Updated", 200);
@@ -79,7 +88,7 @@ namespace StoreSystem.Application.Services.EmployeeService
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<bool?>.Failure("Invalid id", 400);
-            var entity = await _empRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+            StoreEmployee? entity = await _empRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (entity == null) return GeneralResponse<bool?>.Failure("Not found", 404);
             
             _empRepo.DeleteAsync(entity);
@@ -112,12 +121,14 @@ namespace StoreSystem.Application.Services.EmployeeService
                 return GeneralResponse<PagedResult<EmployeeRes>>.Failure("Unauthorized", 401);
 
             var key = GetAllCacheKey(pageNumber, pageSize);
+
             if (!_cache.TryGetValue(key, out PagedResult<EmployeeRes>? cached))
             {
-                var page = await _empRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
+                PagedResult<StoreEmployee> page = await _empRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
                 cached = new PagedResult<EmployeeRes> { Items = page.Items.Select(x => _mapper.Map<EmployeeRes>(x)), PageNumber = page.PageNumber, PageSize = page.PageSize, TotalItems = page.TotalItems };
                 _cache.Set(key, cached, TimeSpan.FromMinutes(5));
             }
+
             return GeneralResponse<PagedResult<EmployeeRes>>.Success(cached!, "Ok", 200);
         }
     }

@@ -109,12 +109,17 @@ namespace StoreSystem.Application.Services.SupplierService
             return GeneralResponse<SupplierRes?>.Success(_mapper.Map<SupplierRes>(sup), "Ok", 200);
         }
 
-        public async Task<GeneralResponse<PagedResult<SupplierRes>>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<GeneralResponse<PagedResult<SupplierRes>>> GetAllAsync(GetSupplierReq req)
         {
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<SupplierRes>>.Failure("Unauthorized", 401);
 
-            var page = await _supplierRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
+            var page = await _supplierRepo.GetAllAsync(req.PageNumber, req.PageSize, x => 
+                x.StoreId == _currentUserService.StoreId.Value &&
+                (string.IsNullOrEmpty(req.Name) || x.Name.Contains(req.Name)) &&
+                (string.IsNullOrEmpty(req.ContactName) || (x.ContactName != null && x.ContactName.Contains(req.ContactName))) &&
+                (string.IsNullOrEmpty(req.Phone) || (x.Phone != null && x.Phone.Contains(req.Phone))));
+
             var mapped = new PagedResult<SupplierRes>
             {
                 Items = page.Items.Select(i => _mapper.Map<SupplierRes>(i)),
@@ -122,7 +127,7 @@ namespace StoreSystem.Application.Services.SupplierService
                 PageSize = page.PageSize,
                 TotalItems = page.TotalItems
             };
-            var cacheKey = $"suppliers:all:{pageNumber}:{pageSize}:{_currentUserService.StoreId.Value}";
+            var cacheKey = $"suppliers:all:{req.PageNumber}:{req.PageSize}:{_currentUserService.StoreId.Value}:{req.Name}:{req.ContactName}:{req.Phone}";
             _cache.Set(cacheKey, mapped, TimeSpan.FromMinutes(5));
             return GeneralResponse<PagedResult<SupplierRes>>.Success(mapped, "Ok", 200);
         }

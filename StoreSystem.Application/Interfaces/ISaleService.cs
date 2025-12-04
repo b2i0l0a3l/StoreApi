@@ -11,7 +11,7 @@ namespace StoreSystem.Application.Interfaces
     {
         Task<GeneralResponse<int>> CreateSaleAsync(SaleReq req);
         Task<GeneralResponse<SaleRes?>> GetByIdAsync(int id);
-        Task<GeneralResponse<PagedResult<SaleRes>>> GetAllAsync(int pageNumber, int pageSize);
+        Task<GeneralResponse<PagedResult<SaleRes>>> GetAllAsync(GetSaleReq req);
         Task<GeneralResponse<int>> ReturnSaleAsync(StoreSystem.Application.Contract.ReturnContract.Req.SalesReturnReq req);
     }
 }

@@ -75,7 +75,7 @@ namespace StoreSystem.Application.Services.AuthService.Register
                 }
 
                 string? RoleResult = await _roleService.EnsureUserInRoleAsync(user, Roles.User);
-                if (RoleResult == null)
+                if (RoleResult != null)
                     return GeneralResponse<AuthRes>.Failure(RoleResult??"Error", 400);
                 
                 await ConfirmEmail(user);

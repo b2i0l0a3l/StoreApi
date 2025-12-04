@@ -5,12 +5,11 @@ using MediatR;
 using StoreSystem.Application.Contract.StockContract.req;
 using StoreSystem.Application.Events;
 using StoreSystem.Application.Interfaces;
+using StoreSystem.Core.common;
 
 namespace StoreSystem.Application.Services.StockService
 {
-    /// <summary>
-    /// Stock management service. Handles create/increase/decrease/adjust operations and publishes events on changes.
-    /// </summary>
+
     public class StockService : IStockService
     {
         private readonly IRepository<Stock> _stockRepo;
@@ -33,14 +32,17 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> CreateStockAsync(StockReq req)
         {
-            if (IsUserUnauthorized())
+            if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
             
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
-            var entity = _mapper.Map<Stock>(req);
+            Stock entity = _mapper.Map<Stock>(req);
             entity.LastUpdated = DateTime.UtcNow;
+            entity.UpdateByUserId = _CurrentUserService.UserId;
+            entity.CreateByUserId = _CurrentUserService.UserId;
+
             await _stockRepo.AddAsync(entity);
             await _uow.CompleteAsync();
             await _mediator.PublishAsync(new StockChangedEvent(entity.ProductId, entity.InventoryId, entity.Quantity));
@@ -50,7 +52,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> IncreaseStockAsync(StockReq req)
         {
-            if (IsUserUnauthorized())
+            if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -58,7 +60,8 @@ namespace StoreSystem.Application.Services.StockService
             
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            var stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId);
+            Stock? stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId);
+           
             if (stock == null)
             {
                 return await CreateStockAsync(req);
@@ -66,10 +69,13 @@ namespace StoreSystem.Application.Services.StockService
 
             stock.Quantity += req.Quantity;
             stock.LastUpdated = DateTime.UtcNow;
+            stock.UpdateByUserId = _CurrentUserService.UserId;
+
             await _stockRepo.UpdateAsync(stock);
             await _uow.CompleteAsync();
 
-            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId);
+            Product? product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _CurrentUserService.StoreId);
+            
             if (product != null)
             {
                 product.StockQuantity += (int)req.Quantity;
@@ -85,24 +91,26 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> DecreaseStockAsync(StockReq req)
         {
-             if (IsUserUnauthorized())
+             if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
             
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            var stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId);
+            Stock? stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && (s.Inventory!.StoreId == _CurrentUserService.StoreId));
+
             if (stock == null) return GeneralResponse<int>.Failure("Stock not found", 404);
 
             if (stock.Quantity < req.Quantity) return GeneralResponse<int>.Failure("Insufficient stock", 400);
 
             stock.Quantity -= req.Quantity;
             stock.LastUpdated = DateTime.UtcNow;
+
             await _stockRepo.UpdateAsync(stock);
             await _uow.CompleteAsync();
 
-            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId);
+            Product? product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _CurrentUserService.StoreId);
             if (product != null)
             {
                 product.StockQuantity -= (int)req.Quantity;
@@ -118,7 +126,7 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> AdjustStockAsync(StockReq req)
         {
-            if (IsUserUnauthorized())
+            if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
@@ -126,16 +134,18 @@ namespace StoreSystem.Application.Services.StockService
             
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            var stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId);
+            Stock? stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId);
             if (stock == null) return GeneralResponse<int>.Failure("Stock not found", 404);
 
-            var delta = req.Quantity - stock.Quantity;
+            decimal delta = req.Quantity - stock.Quantity;
+
             stock.Quantity = req.Quantity;
             stock.LastUpdated = DateTime.UtcNow;
+
             await _stockRepo.UpdateAsync(stock);
             await _uow.CompleteAsync();
 
-            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId);
+            Product? product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _CurrentUserService.StoreId);
             if (product != null)
             {
                 product.StockQuantity += (int)delta;
@@ -151,32 +161,32 @@ namespace StoreSystem.Application.Services.StockService
 
         public async Task<GeneralResponse<int>> GetCurrentStockAsync(StockReq req)
         {
-             if (IsUserUnauthorized())
+             if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
             
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
-            var stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.InventoryId == _CurrentUserService.InventoryId );
+            var stock = await _stockRepo.FindAsync(s => s.ProductId == req.ProductId && s.Inventory!.StoreId == _CurrentUserService.StoreId );
             if (stock == null) return GeneralResponse<int>.Success(0, "No stock", 200);
             return GeneralResponse<int>.Success((int)stock.Quantity, "Ok", 200);
         }
 
         public async Task<GeneralResponse<int>> GetLowStockProductsAsync(StockReq req)
         {
-             if (IsUserUnauthorized())
+             if (!IsUserUnauthorized())
             {
                 return GeneralResponse<int>.Failure("Unauthorized", 403);
             }
             
-            var all = await _productRepo.GetAllAsync(1, int.MaxValue, p => p.StoreId == _CurrentUserService.StoreId);
-            var lowCount = all.Items.Count(p => p.StockQuantity < req.Quantity);
+            PagedResult<Product> all = await _productRepo.GetAllAsync(1, int.MaxValue, p => p.StoreId == _CurrentUserService.StoreId);
+            int lowCount = all.Items.Count(p => p.StockQuantity < req.Quantity);
             return GeneralResponse<int>.Success(lowCount, "Ok", 200);
         }
 
         private bool IsUserUnauthorized()
         {
-            return _CurrentUserService.UserId == null || _CurrentUserService.InventoryId == null;
+            return !(_CurrentUserService.IsAuthenticated || _CurrentUserService.StoreId.HasValue);
         }
   
     }

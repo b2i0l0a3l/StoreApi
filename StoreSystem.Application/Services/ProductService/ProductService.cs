@@ -12,9 +12,6 @@ using FluentValidation;
 
 namespace StoreSystem.Application.Services.ProductService
 {
-    /// <summary>
-    /// Product service implementation following Clean Architecture (application layer).
-    /// </summary>
     public class ProductService : IProductService
     {
         private readonly IRepository<Product> _productRepo;
@@ -39,17 +36,14 @@ namespace StoreSystem.Application.Services.ProductService
 
         public async Task<GeneralResponse<int>> CreateAsync(ProductReq req)
         {
-            if (!_CurrentUserService.IsAuthenticated)
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
                 return GeneralResponse<int>.Failure("Unauthorized", 401);
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            var validationResult = await _validator.ValidateAsync(req);
-            if (!validationResult.IsValid)
-            {
-                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                return GeneralResponse<int>.Failure(errors, 400);
-            }
+            var Result = await ValidateRequest.IsValid<ProductReq>(_validator, req);
+            if (!Result.Item1) return GeneralResponse<int>.Failure(Result.Item2, 400);
+
 
             Product entity = _mapper.Map<Product>(req);
             entity.UpdateAt = DateTime.UtcNow;
@@ -59,6 +53,7 @@ namespace StoreSystem.Application.Services.ProductService
     
             await _productRepo.AddAsync(entity);
             await _uow.CompleteAsync();
+
             await _mediator.PublishAsync(new ProductCreatedEvent(entity.Id, entity.UpdateAt, entity.StockQuantity, entity.StoreId,_CurrentUserService.UserId!));
             _cache.Remove(ProductsCacheKey);
 
@@ -67,19 +62,16 @@ namespace StoreSystem.Application.Services.ProductService
 
         public async Task<GeneralResponse<bool?>> UpdateAsync(int id, ProductReq req)
         {
-            if (!_CurrentUserService.IsAuthenticated)
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1 || req == null) return GeneralResponse<bool?>.Failure("Invalid data", 400);
 
-            var validationResult = await _validator.ValidateAsync(req);
-            if (!validationResult.IsValid)
-            {
-                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                return GeneralResponse<bool?>.Failure(errors, 400);
-            }
-            
-            var product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
+
+            var Result = await ValidateRequest.IsValid<ProductReq>(_validator, req);
+            if (!Result.Item1) return GeneralResponse<bool?>.Failure(Result.Item2, 400);
+
+            Product? product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
             if (product == null) return GeneralResponse<bool?>.Failure("Product not found", 404);
 
             _mapper.Map(req, product);
@@ -98,11 +90,11 @@ namespace StoreSystem.Application.Services.ProductService
 
         public async Task<GeneralResponse<bool?>> DeleteAsync(int id)
         {
-            if (!_CurrentUserService.IsAuthenticated)
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<bool?>.Failure("Invalid id", 400);
-            var product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
+            Product? product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
             if (product == null) return GeneralResponse<bool?>.Failure("Product not found", 404);
 
             _productRepo.DeleteAsync(product);
@@ -114,29 +106,27 @@ namespace StoreSystem.Application.Services.ProductService
 
             return GeneralResponse<bool?>.Success(true, "Deleted", 200);
         }
-        /// <inheritdoc />
         public async Task<GeneralResponse<ProductRes?>> GetByIdAsync(int id)
         {
-            if (!_CurrentUserService.IsAuthenticated)
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
                 return GeneralResponse<ProductRes?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<ProductRes?>.Failure("Invalid id", 400);
 
-            var product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
+            Product? product = await _productRepo.FindAsync(p => p.Id == id && p.StoreId == _CurrentUserService.StoreId!.Value);
             if (product == null) return GeneralResponse<ProductRes?>.Failure("Not found", 404);
 
-            var res = _mapper.Map<ProductRes>(product);
+            ProductRes res = _mapper.Map<ProductRes>(product);
             return GeneralResponse<ProductRes?>.Success(res, "Ok", 200);
         }
 
-        /// <inheritdoc />
         public async Task<GeneralResponse<PagedResult<ProductRes>>> GetAllAsync(GetProductReq req)
         {
-            if (!_CurrentUserService.IsAuthenticated)
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<ProductRes>>.Failure("Unauthorized", 401);
 
-            var page = await _productRepo.GetAllAsync(req.PageNumber, req.PageSize,x => x.StoreId == _CurrentUserService.StoreId!.Value );
-            var mapped = new PagedResult<ProductRes>
+            PagedResult<Product> page = await _productRepo.GetAllAsync(req.PageNumber, req.PageSize,x => x.StoreId == _CurrentUserService.StoreId!.Value );
+            PagedResult<ProductRes> mapped = new ()
             {
                 Items = page.Items.Select(p => _mapper.Map<ProductRes>(p)),
                 PageNumber = page.PageNumber,

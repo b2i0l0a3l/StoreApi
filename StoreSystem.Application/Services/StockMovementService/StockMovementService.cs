@@ -8,6 +8,8 @@ using StoreSystem.Application.Contract.StockMovementContract.res;
 using StoreSystem.Application.Contract.Common;
 using StoreSystem.Application.Contract.StockMovementContract.validator;
 using StoreSystem.Application.Interfaces;
+using FluentValidation;
+using BookingSystem.Core.enums;
 
 namespace StoreSystem.Application.Services.StockMovementService
 {
@@ -17,11 +19,13 @@ namespace StoreSystem.Application.Services.StockMovementService
         private readonly IRepository<Product> _productRepo;
         private readonly ILogger<StockMovementService> _logger;
         private readonly IMapper _mapper;
-        private readonly StockMovementValidator _validator;
+        private readonly IValidator<StockMovementReq> _validator;
         private readonly ICurrentUserService _currentUserService;
+        private enum enMode {Undo, handling};
+        private enMode _Mode { get; set; } = enMode.handling;
 
         public StockMovementService(IRepository<Product> productRepo,
-            IMapper mapper, StockMovementValidator validator, ILogger<StockMovementService> logger, IRepository<StockMovement> movementRepo, ICurrentUserService currentUserService)
+            IMapper mapper, IValidator<StockMovementReq> validator, ILogger<StockMovementService> logger, IRepository<StockMovement> movementRepo, ICurrentUserService currentUserService)
         {
             _movementRepo = movementRepo;
             _logger = logger;
@@ -30,7 +34,7 @@ namespace StoreSystem.Application.Services.StockMovementService
             _productRepo = productRepo;
             _currentUserService = currentUserService;
         }
-
+    
         public async Task<GeneralResponse<int>> AddMovementAsync(StockMovementReq req)
         {
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
@@ -38,11 +42,10 @@ namespace StoreSystem.Application.Services.StockMovementService
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            // Verify the product belongs to the current store
-            var product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _currentUserService.StoreId.Value);
+            Product? product = await _productRepo.FindAsync(p => p.Id == req.ProductId && p.StoreId == _currentUserService.StoreId.Value);
             if (product == null) return GeneralResponse<int>.Failure("Product not found", 404);
 
-            var entity = new StockMovement
+            StockMovement entity = new()
             {
                 ProductId = req.ProductId,
                 InventoryId = req.InventoryId,
@@ -56,18 +59,10 @@ namespace StoreSystem.Application.Services.StockMovementService
             await _movementRepo.AddAsync(entity);
             await _movementRepo.SaveAsync();
 
-            // update product aggregated stock
-            if (req.Type == BookingSystem.Core.enums.MovementType.In)
-                product.StockQuantity += req.Qty;
-            else if (req.Type == BookingSystem.Core.enums.MovementType.Out)
-                product.StockQuantity -= req.Qty;
-            else // Adjustment
-                product.StockQuantity = product.StockQuantity + req.Qty; // assume qty can be negative/positive
-
+            ProcessStockMovement(entity,  product);
             await _productRepo.UpdateAsync(product);
             await _productRepo.SaveAsync();
 
-            // publish domain event (if needed, using IMediator in future)
 
             return GeneralResponse<int>.Success(entity.Id, "Movement added", 201);
         }
@@ -77,12 +72,11 @@ namespace StoreSystem.Application.Services.StockMovementService
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<StockMovementRes>>.Failure("Unauthorized", 401);
 
-            // Verify the product belongs to the current store
-            var product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
+            Product? product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
             if (product == null) return GeneralResponse<PagedResult<StockMovementRes>>.Failure("Product not found", 404);
 
-            var page = await _movementRepo.GetAllAsync(pageNumber, pageSize, m => m.ProductId == productId, q => q.OrderByDescending(x => x.Date));
-            var mapped = new PagedResult<StockMovementRes>
+            PagedResult<StockMovement> page = await _movementRepo.GetAllAsync(pageNumber, pageSize, m => m.ProductId == productId, q => q.OrderByDescending(x => x.Date));
+            PagedResult<StockMovementRes> mapped = new ()
             {
                 Items = page.Items.Select(m => new StockMovementRes
                 {
@@ -108,21 +102,14 @@ namespace StoreSystem.Application.Services.StockMovementService
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
-            // Verify the product belongs to the current store
-            var product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
+            Product? product = await _productRepo.FindAsync(p => p.Id == productId && p.StoreId == _currentUserService.StoreId.Value);
             if (product == null) return GeneralResponse<bool?>.Failure("Product not found", 404);
 
-            var page = await _movementRepo.GetAllAsync(1, 1, m => m.ProductId == productId, q => q.OrderByDescending(x => x.Date));
-            var last = page.Items.FirstOrDefault();
+            PagedResult<StockMovement> page = await _movementRepo.GetAllAsync(1, 1, m => m.ProductId == productId && m.Inventory!.StoreId == _currentUserService.StoreId.Value, q => q.OrderByDescending(x => x.Date));
+            StockMovement? last = page.Items.FirstOrDefault();
             if (last == null) return GeneralResponse<bool?>.Failure("No movements", 404);
 
-            // revert product stock
-            if (last.Type == BookingSystem.Core.enums.MovementType.In)
-                product.StockQuantity -= last.Qty;
-            else if (last.Type == BookingSystem.Core.enums.MovementType.Out)
-                product.StockQuantity += last.Qty;
-            else
-                product.StockQuantity -= last.Qty; // best-effort revert
+            ProcessStockMovement(last, product, enMode.Undo);
 
             await _productRepo.UpdateAsync(product);
             await _productRepo.SaveAsync();
@@ -132,5 +119,34 @@ namespace StoreSystem.Application.Services.StockMovementService
 
             return GeneralResponse<bool?>.Success(true, "Undone", 200);
         }
+
+        
+            private void RevertStockMovement(StockMovement last, Product product)
+        {
+             if (last.Type == MovementType.In)
+                product.StockQuantity -= last.Qty;
+            else if (last.Type == MovementType.Out)
+                product.StockQuantity += last.Qty;
+            else
+                product.StockQuantity -= last.Qty; 
+        }
+        private void ApplyStockMovement(StockMovement req,  Product product)
+        {
+
+            if (req.Type == MovementType.In)
+                product.StockQuantity += req.Qty;
+            else if (req.Type == MovementType.Out)
+                product.StockQuantity -= req.Qty;
+            else
+                product.StockQuantity = product.StockQuantity + req.Qty;
+        }
+        private void ProcessStockMovement(StockMovement entity,  Product product,enMode Mode = enMode.handling)
+        {
+            if (Mode == enMode.Undo)
+                RevertStockMovement(entity,  product);
+            else
+                ApplyStockMovement(entity,  product);
+        }
+        
     }
 }

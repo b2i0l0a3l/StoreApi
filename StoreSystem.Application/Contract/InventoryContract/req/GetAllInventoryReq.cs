@@ -11,6 +11,8 @@ namespace StoreSystem.Application.Contract.InventoryContract.req
         public int StoreId{ get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
+        public string? Name { get; set; }
+        public string? Location { get; set; }
 
     }
 }

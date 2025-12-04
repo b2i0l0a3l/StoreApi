@@ -15,6 +15,6 @@ namespace StoreSystem.Application.Interfaces
         Task<GeneralResponse<bool?>> UpdateInventoryAsync(int id, InventoryReq req);
         Task<GeneralResponse<bool?>> DeleteInventoryAsync(int id);
         Task<GeneralResponse<InventoryRes?>> GetByIdAsync(int id);
-        Task<GeneralResponse<PagedResult<InventoryRes>>> GetAllAsync(int pageNumber, int pageSize);
+        Task<GeneralResponse<PagedResult<InventoryRes>>> GetAllAsync(GetAllInventoryReq req);
     }
 }

@@ -31,7 +31,7 @@ namespace StoreApi.Api.Controllers
         [HttpGet("All")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [RequirePermission(PermissionCodes.SalesRead)]
-        public async Task<ActionResult<GeneralResponse<PagedResult<SaleRes>>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
-            => Ok(await _service.GetAllAsync(pageNumber, pageSize));
+        public async Task<ActionResult<GeneralResponse<PagedResult<SaleRes>>>> GetAll([FromQuery] GetSaleReq req)
+            => Ok(await _service.GetAllAsync(req));
     }
 }

@@ -109,13 +109,18 @@ namespace StoreSystem.Application.Services.SaleService
             return GeneralResponse<SaleRes?>.Success(res, "Ok", 200);
         }
 
-        public async Task<GeneralResponse<PagedResult<SaleRes>>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<GeneralResponse<PagedResult<SaleRes>>> GetAllAsync(GetSaleReq req)
         {
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<SaleRes>>.Failure("Unauthorized", 401);
 
-            var page = await _saleRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
-            var mapped = new PagedResult<SaleRes>
+            PagedResult<SalesInvoice> page = await _saleRepo.GetAllAsync(req.PageNumber, req.PageSize, x => 
+                x.StoreId == _currentUserService.StoreId.Value &&
+                (!req.CustomerId.HasValue || x.CustomerId == req.CustomerId) &&
+                (!req.FromDate.HasValue || x.Date >= req.FromDate) &&
+                (!req.ToDate.HasValue || x.Date <= req.ToDate));
+
+            PagedResult<SaleRes> mapped = new()
             {
                 Items = page.Items.Select(inv => new SaleRes
                 {
@@ -123,7 +128,6 @@ namespace StoreSystem.Application.Services.SaleService
                     StoreId = inv.StoreId,
                     CustomerId = inv.CustomerId,
                     Date = inv.Date,
-                    StatusEnum = inv.Status,
                     Items = inv.SalesItems.Select(s => new SaleItemRes { ProductId = s.ProductId, Quantity = s.Qty, UnitPrice = s.SellPrice })
                 }),
                 PageNumber = page.PageNumber,

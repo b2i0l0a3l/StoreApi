@@ -25,6 +25,9 @@ namespace StoreSystem.Application.Services.CategoryService
 
         public async Task<GeneralResponse<int>> AddAsync(CategoryReq entity)
         {
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
+                return GeneralResponse<int>.Failure("Unauthorized", 401);
+
             if (entity == null )
                 return GeneralResponse<int>.Failure("Invalid Data", 400);
 
@@ -54,6 +57,10 @@ namespace StoreSystem.Application.Services.CategoryService
 
         public async Task<GeneralResponse<bool?>> DeleteAsync(int id)
         {
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
+                return GeneralResponse<bool?>.Failure("Unauthorized", 401);
+
+            
 
             if (id < 1)
             {
@@ -72,6 +79,9 @@ namespace StoreSystem.Application.Services.CategoryService
          
         public async Task<GeneralResponse<PagedResult<CategoryRes>>> GetAllForStoreAsync(GetCategoryReq entity)
         {
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
+                return GeneralResponse<PagedResult<CategoryRes>>.Failure("Unauthorized", 401);
+
 
             if (entity == null || entity.PageNumber < 1  || entity.PageSize < 1)
                 return GeneralResponse<PagedResult<CategoryRes>>.Failure("Invalid Data", 400);
@@ -97,6 +107,9 @@ namespace StoreSystem.Application.Services.CategoryService
         }
         public async Task<GeneralResponse<CategoryRes?>> GetByIdAsync(int id)
         {
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
+                return GeneralResponse<CategoryRes?>.Failure("Unauthorized", 401);
+
 
              if (id < 1)
                 return GeneralResponse<CategoryRes?>.Failure("Invalid Data", 400);
@@ -108,6 +121,9 @@ namespace StoreSystem.Application.Services.CategoryService
         }
         public async Task<GeneralResponse<bool?>> Update(CategoryReq entity, int Id)
         {
+            if (!_CurrentUserService.IsAuthenticated || !_CurrentUserService.StoreId.HasValue)
+                return GeneralResponse<bool?>.Failure("Unauthorized", 401);
+
             if (Id < 1 || entity == null)
                 return GeneralResponse<bool?>.Failure("Invalid Data", 400);
            

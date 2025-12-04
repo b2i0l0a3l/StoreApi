@@ -11,22 +11,18 @@ using StoreSystem.Application.Interfaces;
 
 namespace StoreSystem.Application.Services.InventoryService
 {
-    /// <summary>
-    /// Inventory service implementation.
-    /// </summary>
+
     public class InventoryService : IInventoryService
     {
         private readonly IRepository<Inventory> _inventoryRepo;
         private readonly IUniteOfWork _uow;
-        private readonly IMediator _mediator;
         private readonly AutoMapper.IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
 
-        public InventoryService(IRepository<Inventory> inventoryRepo, IUniteOfWork uow, IMediator mediator, AutoMapper.IMapper mapper, ICurrentUserService currentUserService)
+        public InventoryService(IRepository<Inventory> inventoryRepo, IUniteOfWork uow, AutoMapper.IMapper mapper, ICurrentUserService currentUserService)
         {
             _inventoryRepo = inventoryRepo;
             _uow = uow;
-            _mediator = mediator;
             _mapper = mapper;
             _currentUserService = currentUserService;
         }
@@ -38,7 +34,7 @@ namespace StoreSystem.Application.Services.InventoryService
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            var entity = _mapper.Map<Inventory>(req);
+            Inventory entity = _mapper.Map<Inventory>(req);
             entity.StoreId = _currentUserService.StoreId.Value;
             entity.CreateByUserId = _currentUserService.UserId;
             entity.UpdateByUserId = _currentUserService.UserId;
@@ -46,7 +42,6 @@ namespace StoreSystem.Application.Services.InventoryService
             await _inventoryRepo.AddAsync(entity);
             await _uow.CompleteAsync();
 
-            // No domain event here by default
             return GeneralResponse<int>.Success(entity.Id, "Inventory created", 201);
         }
 
@@ -56,14 +51,15 @@ namespace StoreSystem.Application.Services.InventoryService
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1 || req == null) return GeneralResponse<bool?>.Failure("Invalid data", 400);
-            var inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+
+            Inventory? inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (inv == null) return GeneralResponse<bool?>.Failure("Inventory not found", 404);
 
             inv.Name = req.Name;
             inv.Location = req.Location;
             inv.UpdateByUserId = _currentUserService.UserId;
 
-            var ok = await _inventoryRepo.UpdateAsync(inv);
+            bool ok = await _inventoryRepo.UpdateAsync(inv);
             if (!ok) return GeneralResponse<bool?>.Failure("Could not update inventory", 500);
             await _uow.CompleteAsync();
             return GeneralResponse<bool?>.Success(true, "Updated", 200);
@@ -75,7 +71,7 @@ namespace StoreSystem.Application.Services.InventoryService
                 return GeneralResponse<bool?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<bool?>.Failure("Invalid id", 400);
-            var inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+            Inventory? inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (inv == null) return GeneralResponse<bool?>.Failure("Inventory not found", 404);
 
             _inventoryRepo.DeleteAsync(inv);
@@ -89,20 +85,24 @@ namespace StoreSystem.Application.Services.InventoryService
                 return GeneralResponse<InventoryRes?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<InventoryRes?>.Failure("Invalid id", 400);
-            var inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+            Inventory? inv = await _inventoryRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (inv == null) return GeneralResponse<InventoryRes?>.Failure("Not found", 404);
 
-            var res = _mapper.Map<InventoryRes>(inv);
+            InventoryRes res = _mapper.Map<InventoryRes>(inv);
             return GeneralResponse<InventoryRes?>.Success(res, "Ok", 200);
         }
 
-        public async Task<GeneralResponse<PagedResult<InventoryRes>>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<GeneralResponse<PagedResult<InventoryRes>>> GetAllAsync(GetAllInventoryReq req)
         {
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<InventoryRes>>.Failure("Unauthorized", 401);
 
-            var page = await _inventoryRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
-            var mapped = new PagedResult<InventoryRes>
+            PagedResult<Inventory> page = await _inventoryRepo.GetAllAsync(req.PageNumber, req.PageSize, x => 
+                x.StoreId == _currentUserService.StoreId.Value &&
+                (string.IsNullOrEmpty(req.Name) || x.Name.Contains(req.Name)) &&
+                (string.IsNullOrEmpty(req.Location) || (x.Location != null && x.Location.Contains(req.Location))));
+
+            PagedResult<InventoryRes> mapped = new ()
             {
                 Items = page.Items.Select(i => _mapper.Map<InventoryRes>(i)),
                 PageNumber = page.PageNumber,

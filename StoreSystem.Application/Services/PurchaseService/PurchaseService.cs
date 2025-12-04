@@ -40,28 +40,24 @@ namespace StoreSystem.Application.Services.PurchaseService
 
             if (req == null) return GeneralResponse<int>.Failure("Invalid payload", 400);
 
-            // Ensure the purchase is created for the current user's store
-            var invoice = new PurchaseInvoice
+            PurchaseInvoice invoice = new ()
             {
                 SupplierId = req.SupplierId,
                 Date = req.Date,
                 StoreId = _currentUserService.StoreId.Value,
                 Status = BookingSystem.Core.enums.InvoiceStatus.Pending,
                 CreateByUserId = _currentUserService.UserId,
-                UpdateByUserId = _currentUserService.UserId
-            };
-
-            foreach (var item in req.Items)
-            {
-                var pi = new PurchaseItem
+                UpdateByUserId = _currentUserService.UserId,
+                PurchaseItems = req.Items.Select
+                (item=> new PurchaseItem
                 {
                     ProductId = item.ProductId,
                     Qty = item.Quantity,
                     CostPrice = item.UnitCost,
                     Total = item.Quantity * item.UnitCost
-                };
-                invoice.PurchaseItems.Add(pi);
-            }
+                      }).ToList()
+             };
+
 
             invoice.TotalAmount = invoice.PurchaseItems.Sum(p => p.Total);
             invoice.PaidAmount = 0;
@@ -81,10 +77,10 @@ namespace StoreSystem.Application.Services.PurchaseService
                 return GeneralResponse<PurchaseRes?>.Failure("Unauthorized", 401);
 
             if (id < 1) return GeneralResponse<PurchaseRes?>.Failure("Invalid id", 400);
-            var inv = await _purchaseRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
+            PurchaseInvoice? inv = await _purchaseRepo.FindAsync(x => x.Id == id && x.StoreId == _currentUserService.StoreId.Value);
             if (inv == null) return GeneralResponse<PurchaseRes?>.Failure("Not found", 404);
 
-            var res = new PurchaseRes
+            PurchaseRes res = new()
             {
                 Id = inv.Id,
                 SupplierId = inv.SupplierId,
@@ -96,7 +92,7 @@ namespace StoreSystem.Application.Services.PurchaseService
                     UnitCost = p.CostPrice
                 }).ToArray()
             };
-
+            
             return GeneralResponse<PurchaseRes?>.Success(res, "Ok", 200);
         }
 
@@ -105,8 +101,8 @@ namespace StoreSystem.Application.Services.PurchaseService
             if (!_currentUserService.IsAuthenticated || !_currentUserService.StoreId.HasValue)
                 return GeneralResponse<PagedResult<PurchaseRes>>.Failure("Unauthorized", 401);
 
-            var page = await _purchaseRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
-            var mapped = new PagedResult<PurchaseRes>
+            PagedResult<PurchaseInvoice> page = await _purchaseRepo.GetAllAsync(pageNumber, pageSize, x => x.StoreId == _currentUserService.StoreId.Value);
+            PagedResult<PurchaseRes> mapped = new ()
             {
                 Items = page.Items.Select(inv => new PurchaseRes
                 {
